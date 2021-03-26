@@ -4,11 +4,11 @@ errLogInit(2000)
 
 < envPaths
 
-dbLoadDatabase("dbd/linkamT96App.dbd")
+dbLoadDatabase("../../dbd/linkamT96App.dbd")
 linkamT96App_registerRecordDeviceDriver(pdbbase)
 
 # IOC PV prefix
-epicsEnvSet("$(PREFIX)", "TestLinkam1")
+epicsEnvSet("PREFIX", "TestLinkam1")
 
 # Asyn Port
 epicsEnvSet("PORT", "LINK1")
@@ -24,11 +24,11 @@ epicsEnvSet("LINKAM3_LOG_PATH", "tmp/linkam.log")
 
 
 # Linkam 3.0 connect function
-Linkam3Connect("$(PORT)", "$(CONNECTION_TYPE)", "$(LINKAM_LICENSE_PATH)", "$(LINKAM_LOG_PATH)")
+Linkam3Connect("$(PORT)", "$(CONNECTION_TYPE)", "$(LINKAM3_LICENSE_PATH)", "$(LINKAM3_LOG_PATH)")
 epicsThreadSleep(2)
 
 # Set asyn log level
-asynSetTraceIOMask($(PORT), 0, 2)
+asynSetTraceIOMask($(PORT), 0, 0x2)
 #asynSetTraceMask($(PORT), 0, 0xff)
 
 # Load linkam records

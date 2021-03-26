@@ -1,0 +1,6 @@
+epicsEnvSet("IOC","iocLinkam")
+epicsEnvSet("TOP","/epics/src/support/linkam3/iocs/linkamIOC")
+epicsEnvSet("LINKAM3","/epics/src/support/linkam3/iocs/linkamIOC/../..")
+epicsEnvSet("SUPPORT","/epics/src/support")
+epicsEnvSet("ASYN","/epics/src/support/asyn")
+epicsEnvSet("EPICS_BASE","/epics/src/base")

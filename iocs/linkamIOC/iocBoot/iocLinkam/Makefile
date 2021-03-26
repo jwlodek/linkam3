@@ -1,7 +1,6 @@
 TOP = ../..
 include $(TOP)/configure/CONFIG
-
-SCRIPTS += st.cmd
-
-include $(TOP)/configure/RULES
+ARCH = linux-x86_64
+TARGETS = envPaths
+include $(TOP)/configure/RULES.ioc
 
