@@ -25,45 +25,68 @@
 #define P_CtrlStatusString    "LINKAM_STATUS"
 #define P_StageConfigString   "LINKAM_STAGE_CONFIG"
 
-class linkamPortDriver : public asynPortDriver {
+class Linkam3 : public asynPortDriver {
+
 public:
-	linkamPortDriver(const char *);
-	virtual asynStatus readFloat64(asynUser *, epicsFloat64 *);
-	virtual asynStatus readOctet(asynUser *, char *, size_t, size_t *, int *);
-	virtual asynStatus writeFloat64(asynUser *, epicsFloat64);
-	virtual asynStatus writeInt32(asynUser *, epicsInt32);
-	virtual asynStatus readInt32(asynUser *, epicsInt32 *);
+
+    Linkam3(const char* portName, const char* connectionType, const char* licenseFilePath, const char* logFilePath);
+
+    virtual asynStatus readFloat64(asynUser *, epicsFloat64 *);
+    virtual asynStatus readOctet(asynUser *, char *, size_t, size_t *, int *);
+    virtual asynStatus writeFloat64(asynUser *, epicsFloat64);
+    virtual asynStatus writeInt32(asynUser *, epicsInt32);
+    virtual asynStatus readInt32(asynUser *, epicsInt32 *);
+
 protected:
-	//epicsEventId eventId_;
-	int P_Temp;
-	#define FIRST_LINKAM_COMMAND P_Temp
-	int P_RampRateSet;
-	int P_RampRate;
-	int P_SetpointSet;
-	int P_Setpoint;
-	int P_Power;
-	int P_StartHeating;
-	int P_LNPSpeed;
-	int P_DSC;
-	int P_LNPSetMode;
-	int P_LNPSetSpeed;
-	int P_HoldTimeSet;
-	int P_HoldTimeLeft;
-	int P_StageName;
-	int P_StageSerial;
-	int P_FirmVer;
-	int P_HardVer;
-	int P_CtrllrError;
-	int P_CtrlConfig;
-	int P_CtrlStatus;
-	int P_StageConfig;
-	int P_Name;
-	int P_Serial;
-	#define LAST_LINKAM_COMMAND P_Serial
+
+    //epicsEventId eventId_;
+    int P_Temp;
+    #define FIRST_LINKAM_COMMAND P_Temp
+    int P_RampRateSet;
+    int P_RampRate;
+    int P_SetpointSet;
+    int P_Setpoint;
+    int P_Power;
+    int P_StartHeating;
+    int P_LNPSpeed;
+    int P_DSC;
+    int P_LNPSetMode;
+    int P_LNPSetSpeed;
+    int P_HoldTimeSet;
+    int P_HoldTimeLeft;
+    int P_StageName;
+    int P_StageSerial;
+    int P_FirmVer;
+    int P_HardVer;
+    int P_CtrllrError;
+    int P_CtrlConfig;
+    int P_CtrlStatus;
+    int P_StageConfig;
+    int P_Name;
+    int P_Serial;
+    #define LAST_LINKAM_COMMAND P_Serial
+
+    // Connection functions
+    bool initUSBConnection(CommsHandle& handle, unsigned int vendorID, unsigned int productID, LinkamSDK::Variant& result);
+    bool initSerialConnection(CommsHandle& handle, const char* serialPort, 
+                                                    unsigned int baudrate, 
+                                                    unsigned int bytesize, 
+                                                    unsigned int flowcontrol, 
+                                                    unsigned int parity, 
+                                                    unsigned int stopbits, 
+                                                    LinkamSDK::Variant& result);
+
+    // Status printing functions
+    void printErrorConnectionStatus(LinkamSDK::Variant connectionResult);
+    void printLinkam3Status();
+
+
 private:
-	void rtrim(char *);
-	bool LNP_AutoMode;
-	int LNP_ManualSpeed;
+    void rtrim(char *);
+    bool LNP_AutoMode;
+    int LNP_ManualSpeed;
+    CommsHandle handle = 0;
+    LinkamSDK::Variant result;
 };
 
 #define NUM_LINKAM_PARAMS (&LAST_LINKAM_COMMAND - &FIRST_LINKAM_COMMAND + 1)
