@@ -21,13 +21,12 @@
 
 TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
-SUPPORT=      /dls_sw/prod/R3.14.12.7/support
-WORK=         /dls_sw/work/R3.14.12.7/support
+SUPPORT=      /epics/src/support
 
-ASYN=$(SUPPORT)/asyn/4-31
+ASYN=$(SUPPORT)/asyn
 
 # EPICS_BASE usually appears last so other apps can override stuff:
-EPICS_BASE=/dls_sw/epics/R3.14.12.7/base
+EPICS_BASE=/epics/src/base
 
 # Set RULES here if you want to take build rules from somewhere
 # other than EPICS_BASE:

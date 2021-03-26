@@ -3,8 +3,8 @@
 #include <iocsh.h>
 #include <stdio.h>
 #include <string.h>
-#include "include/LinkamSDK.h"
-#include "include/CommsAPI.h"
+#include "LinkamSDK.h"
+#include "CommsAPI.h"
 #include "linkamT96.h"
 
 CommsHandle handle = 0;

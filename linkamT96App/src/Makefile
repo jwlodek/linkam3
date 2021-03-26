@@ -6,7 +6,6 @@ LIBRARY_IOC += linkamT96
 
 DBD += linkamT96Support.dbd
 
-LIB_INSTALLS += ../libLinkamSDK.so
 LinkamSDK_DIR = $(TOP)/linkamT96App/src
 
 LIB_SYS_LIBS += usb-1.0
