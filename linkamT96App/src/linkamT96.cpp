@@ -1,5 +1,6 @@
 #include <epicsExport.h>
 #include <epicsTime.h>
+#include <epicsExit.h>
 #include <iocsh.h>
 #include <stdio.h>
 #include <string.h>
@@ -33,7 +34,7 @@ static const char *driverName = "Linkam3";
  *
  * @params[in]: pPvt -> pointer to the Linkam3 object created in Linkam3Connect
  */
-static void epicsCallbackC(void* pPvt) {
+static void exitCallbackC(void* pPvt) {
     Linkam3* pLinkam3 = (Linkam3*) pLinkam3;
     delete(pLinkam3);
 }
@@ -420,7 +421,6 @@ bool Linkam3::initUSBConnection(CommsHandle& handle, unsigned int vendorID, unsi
     LinkamSDK::CommsInfo info;
     LinkamSDK::Variant param1;
     LinkamSDK::Variant param2;
-    LinkamSDK::Variant result;
     bool connected = false;
 
     param1.vUint32 = LOGGING_LEVEL_MINIMAL;//LOGGING_LEVEL_INVESTIGATION;
@@ -429,13 +429,13 @@ bool Linkam3::initUSBConnection(CommsHandle& handle, unsigned int vendorID, unsi
 
     if (vendorID != 0x0){
         LinkamSDK::USBCommsInfo* usb = reinterpret_cast<LinkamSDK::USBCommsInfo*>(info.info);
-        usb->vendorID = (uint16_t) args.vendorID;
+        usb->vendorID = (uint16_t) vendorID;
         printf("USB: Vendor[%X] Product[%d]\n", usb->vendorID, usb->productID);
     }
-    else if (productId != 0x0)
+    else if (productID != 0x0)
     {
         LinkamSDK::USBCommsInfo* usb = reinterpret_cast<LinkamSDK::USBCommsInfo*>(info.info);
-        usb->productID = (uint16_t) args.productID;
+        usb->productID = (uint16_t) productID;
         printf("USB: Vendor[%X] Product[%d]\n", usb->vendorID, usb->productID);
     }
 
@@ -444,11 +444,11 @@ bool Linkam3::initUSBConnection(CommsHandle& handle, unsigned int vendorID, unsi
     linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_OpenComms, 0, &result, param1, param2);
     if (result.vConnectionStatus.flags.connected)
     {
-        LOG("We got a connection to the USB device!\n");
+        LOG("We got a connection to the USB device!");
         connected = true;
     }
     else {
-        ERR("Failed to obtain a USB connection!")
+        ERR("Failed to obtain a USB connection!");
         printErrorConnectionStatus(result);
     }
 
@@ -463,6 +463,9 @@ bool Linkam3::initSerialConnection(CommsHandle& handle, const char* serialPort,
                                                     unsigned int parity, 
                                                     unsigned int stopbits, 
                                                     LinkamSDK::Variant& result){
+
+    const char* functionName = "initSerialConnection";
+
     LinkamSDK::CommsInfo info;
     LinkamSDK::Variant param1;
     LinkamSDK::Variant param2;
@@ -628,41 +631,22 @@ Linkam3::Linkam3(const char *portName, const char* connectionType, const char* l
     //printf("Linkam SDK version: %s\n", version);
     setStringParam(P_FirmVer, version);
 
+    bool connected = false;
+
     if(strcmp(connectionType, "Serial") == 0){
-        //initSerialConnection();
+        connected = initSerialConnection(handle, "/dev/ttyS1", 0, 0, 0, 0, 0, result);
     }
-    else if (strcmp(commectionType, "USB") == 0){
+    else if (strcmp(connectionType, "USB") == 0){
         // Linkam vendor ID is 16da, product ID for T96 is 0002
-        initUSBConnection(handle, 0x16da, 0x0002, result);
+        connected = initUSBConnection(handle, 0x16da, 0x0002, result);
     }
     else {
         ERR("No valid connection type selected!");
-        connected = false;
     }
 
-    if (connected){
+    //if (connected){
 
-    }
-
-    linkamInitialiseSerialCommsInfo(&info, args[1].sval);
-
-    LinkamSDK::SerialCommsInfo* serial = reinterpret_cast<LinkamSDK::SerialCommsInfo*>(info.info);
-    serial->baudrate = 115200;
-    serial->bytesize = (LinkamSDK::ByteSize) 8;
-    serial->flowcontrol = (LinkamSDK::FlowControl) 0;
-    serial->parity = (LinkamSDK::Parity) 0;
-    serial->stopbits = (LinkamSDK::Stopbits) 1;
-
-    param1.vPtr = &info;
-    param2.vPtr = &handle;
-
-    linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_OpenComms, 0, &result, param1, param2);
-
-    if (result.vConnectionStatus.flags.connected) {
-        printf("LinkamT96: We got a connection to the Serial device!\n");
-    } else {
-        printf( "Error openning connection:\n\nstatus.connected = %d\nstatus.flags.errorAllocationFailed = %d\nstatus.flags.errorAlreadyOpen = %d\nstatus.flags.errorCommsStreams = %d\nstatus.flags.errorHandleRegistrationFailed = %d\nstatus.flags.errorMultipleDevicesFound = %d\nstatus.flags.errorNoDeviceFound = %d\nstatus.flags.errorPortConfig = %d\nstatus.flags.errorPropertiesIncorrect = %d\nstatus.flags.errorSerialNumberRequired = %d\nstatus.flags.errorTimeout = %d\nstatus.flags.errorUnhandled = %d\n\n", result.vConnectionStatus.flags.connected, result.vConnectionStatus.flags.errorAllocationFailed, result.vConnectionStatus.flags.errorAlreadyOpen, result.vConnectionStatus.flags.errorCommsStreams, result.vConnectionStatus.flags.errorHandleRegistrationFailed, result.vConnectionStatus.flags.errorMultipleDevicesFound, result.vConnectionStatus.flags.errorNoDeviceFound, result.vConnectionStatus.flags.errorPortConfig, result.vConnectionStatus.flags.errorPropertiesIncorrect, result.vConnectionStatus.flags.errorSerialNumberRequired, result.vConnectionStatus.flags.errorTimeout, result.vConnectionStatus.flags.errorUnhandled);
-    }
+    //}
 
 
     epicsAtExit(exitCallbackC, this);
@@ -682,7 +666,7 @@ extern "C" int Linkam3Connect(const char* portName, const char* connectionType, 
 
     new Linkam3(portName, connectionType, licenseFilePath, logFilePath);
 
-    return asynSuccess
+    return asynSuccess;
 }
 
 

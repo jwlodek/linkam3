@@ -1,24 +1,37 @@
-cd "$(INSTALL)"
+#!../../bin/linux-x86_64/linkamT96App
 
-epicsEnvSet "EPICS_TS_MIN_WEST", '0'
+errLogInit(2000)
+
+< envPaths
+
+dbLoadDatabase("dbd/linkamT96App.dbd")
+linkamT96App_registerRecordDeviceDriver(pdbbase)
+
+# IOC PV prefix
+epicsEnvSet("$(PREFIX)", "TestLinkam1")
+
+# Asyn Port
+epicsEnvSet("PORT", "LINK1")
+
+# Either Serial or USB connection is supported
+#epicsEnvSet("CONNECTION_TYPE", "Serial")
+epicsEnvSet("CONNECTION_TYPE", "USB")
+
+# Path to the Linkam.lsk software license file
+epicsEnvSet("LINKAM3_LICENSE_PATH", "/epics/src/support/linkam3/SDK/bin/Release/x64/Linkam.lsk")
+# Path for log messages
+epicsEnvSet("LINKAM3_LOG_PATH", "tmp/linkam.log")
 
 
-# Loading libraries
-# -----------------
+# Linkam 3.0 connect function
+Linkam3Connect("$(PORT)", "$(CONNECTION_TYPE)", "$(LINKAM_LICENSE_PATH)", "$(LINKAM_LOG_PATH)")
+epicsThreadSleep(2)
 
-# Device initialisation
-# ---------------------
+# Set asyn log level
+asynSetTraceIOMask($(PORT), 0, 2)
+#asynSetTraceMask($(PORT), 0, 0xff)
 
-cd "$(INSTALL)"
+# Load linkam records
+dbLoadRecords("$(LINKAM3)/db/Linkam.template", "P=$(PREFIX), PORT=$(PORT), ADDR=0, TIMEOUT=1")
 
-dbLoadDatabase "dbd/example.dbd"
-example_registerRecordDeviceDriver(pdbbase)
-
-# Linkam 3.0 connect
-linkamConnect "EA-LINKAM-01_AP", "/dev/ttyUSB0"
-
-# Final ioc initialisation
-# ------------------------
-cd "$(INSTALL)"
-dbLoadRecords 'db/example_expanded.db'
-iocInit
+iocInit()

@@ -30,6 +30,7 @@ class Linkam3 : public asynPortDriver {
 public:
 
     Linkam3(const char* portName, const char* connectionType, const char* licenseFilePath, const char* logFilePath);
+    ~Linkam3();
 
     virtual asynStatus readFloat64(asynUser *, epicsFloat64 *);
     virtual asynStatus readOctet(asynUser *, char *, size_t, size_t *, int *);
