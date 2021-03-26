@@ -20,10 +20,10 @@ static const char *driverName = "Linkam3";
     "%s::%s: " fmt "\n", driverName, functionName, __VA_ARGS__);
 
 // Flow message formatters
-#define LOG(msg) asynPrint(pasynUserSelf, ASYN_TRACEIO_DEVICE, "%s::%s: %s\n", \
+#define LOG(msg) asynPrint(pasynUserSelf, ASYN_TRACE_FLOW, "%s::%s: %s\n", \
     driverName, functionName, msg)
 
-#define LOG_ARGS(fmt,...) asynPrint(pasynUserSelf, ASYN_TRACEIO_DEVICE, \
+#define LOG_ARGS(fmt,...) asynPrint(pasynUserSelf, ASYN_TRACE_FLOW, \
     "%s::%s: " fmt "\n", driverName, functionName, __VA_ARGS__);
 
 
@@ -40,23 +40,38 @@ static void exitCallbackC(void* pPvt) {
 }
 
 
-
+/**
+ * Helper function that prints information about a failed connection to the device
+ * 
+ * @params[in] connectionResult -> Variant union that contains information about the failed connection
+ */
 void Linkam3::printErrorConnectionStatus(LinkamSDK::Variant connectionResult){
     printf
     (
-            "Error openning connection:\n\nstatus.connected = %d\nstatus.flags.errorAllocationFailed = %d\nstatus.flags.errorAlreadyOpen = %d\nstatus.flags.errorCommsStreams = %d\nstatus.flags.errorHandleRegistrationFailed = %d\nstatus.flags.errorMultipleDevicesFound = %d\nstatus.flags.errorNoDeviceFound = %d\nstatus.flags.errorPortConfig = %d\nstatus.flags.errorPropertiesIncorrect = %d\nstatus.flags.errorSerialNumberRequired = %d\nstatus.flags.errorTimeout = %d\nstatus.flags.errorUnhandled = %d\n\n",
-            connectionResult.vConnectionStatus.flags.connected,
-            connectionResult.vConnectionStatus.flags.errorAllocationFailed,
-            connectionResult.vConnectionStatus.flags.errorAlreadyOpen,
-            connectionResult.vConnectionStatus.flags.errorCommsStreams,
-            connectionResult.vConnectionStatus.flags.errorHandleRegistrationFailed,
-            connectionResult.vConnectionStatus.flags.errorMultipleDevicesFound,
-            connectionResult.vConnectionStatus.flags.errorNoDeviceFound,
-            connectionResult.vConnectionStatus.flags.errorPortConfig,
-            connectionResult.vConnectionStatus.flags.errorPropertiesIncorrect,
-            connectionResult.vConnectionStatus.flags.errorSerialNumberRequired,
-            connectionResult.vConnectionStatus.flags.errorTimeout,
-            connectionResult.vConnectionStatus.flags.errorUnhandled
+        "Error opening connection:\n\nstatus.connected = %d\n\
+        status.flags.errorAllocationFailed = %d\n\
+        status.flags.errorAlreadyOpen = %d\n\
+        status.flags.errorCommsStreams = %d\n\
+        status.flags.errorHandleRegistrationFailed = %d\n\
+        status.flags.errorMultipleDevicesFound = %d\n\
+        status.flags.errorNoDeviceFound = %d\n\
+        status.flags.errorPortConfig = %d\n\
+        status.flags.errorPropertiesIncorrect = %d\n\
+        status.flags.errorSerialNumberRequired = %d\n\
+        status.flags.errorTimeout = %d\n\
+        status.flags.errorUnhandled = %d\n\n",
+        connectionResult.vConnectionStatus.flags.connected,
+        connectionResult.vConnectionStatus.flags.errorAllocationFailed,
+        connectionResult.vConnectionStatus.flags.errorAlreadyOpen,
+        connectionResult.vConnectionStatus.flags.errorCommsStreams,
+        connectionResult.vConnectionStatus.flags.errorHandleRegistrationFailed,
+        connectionResult.vConnectionStatus.flags.errorMultipleDevicesFound,
+        connectionResult.vConnectionStatus.flags.errorNoDeviceFound,
+        connectionResult.vConnectionStatus.flags.errorPortConfig,
+        connectionResult.vConnectionStatus.flags.errorPropertiesIncorrect,
+        connectionResult.vConnectionStatus.flags.errorSerialNumberRequired,
+        connectionResult.vConnectionStatus.flags.errorTimeout,
+        connectionResult.vConnectionStatus.flags.errorUnhandled
     );
 }
 
@@ -87,7 +102,7 @@ asynStatus Linkam3::readFloat64(asynUser *pasynUser, epicsFloat64 *value)
     } else if (function == P_DSC) {
         param1.vStageValueType = LinkamSDK::eStageValueTypeDsc;
     } else if (function == P_HoldTimeLeft) {
-    param1.vStageValueType = LinkamSDK::eStageValueTypeRampHoldRemaining;
+        param1.vStageValueType = LinkamSDK::eStageValueTypeRampHoldRemaining;
     } 
 
     if (linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_GetValue, handle, &result, param1, param2))
@@ -139,30 +154,31 @@ asynStatus Linkam3::readOctet(asynUser *pasynUser, char *value, size_t maxChars,
         linkamMsgCode = LinkamSDK::eLinkamFunctionMsgCode_GetControllerError;
     }
 
-  if(function == P_CtrllrError){
-      if (linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_GetControllerError, handle, &result)) {
+    if(function == P_CtrllrError){
+        if (linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_GetControllerError, handle, &result)) {
+            strcpy(value, LinkamSDK::ControllerErrorStrings[result.vControllerError]);
+            *eomReason = 0;
+        } 
+        else {
+            status = asynError;
+        }
+    } 
+    else {
+        result.vUint64 = 0;
+        param1.vPtr = string;
+        param2.vUint32 = 256;
+        if (linkamProcessMessage(linkamMsgCode, handle, &result, param1, param2)) {
+            rtrim(string);	  
+            setStringParam(function, string);
 
-      strcpy(value, LinkamSDK::ControllerErrorStrings[result.vControllerError]);
-          *eomReason = 0;
+            *nActual = strlen(string) + 1;
+            *eomReason = 0;
 
-      } else {
-          status = asynError;
-      }
-  } else {
-      result.vUint64 = 0;
-      param1.vPtr = string;
-      param2.vUint32 = 256;
-      if (linkamProcessMessage(linkamMsgCode, handle, &result, param1, param2)) {	  		  
-      rtrim(string);	  
-          setStringParam(function, string);
-
-          *nActual = strlen(string) + 1;
-          *eomReason = 0;
-
-      } else {
-          status = asynError;
-      }
-  }
+        }
+        else {
+            status = asynError;
+        }
+    }
 
     if (status)
         epicsSnprintf(pasynUser->errorMessage, pasynUser->errorMessageSize,
@@ -176,12 +192,19 @@ asynStatus Linkam3::readOctet(asynUser *pasynUser, char *value, size_t maxChars,
     return status; 
 }
 
+/**
+ * Helper function for trimming whitespace from the end of a message.
+ * 
+ * @params[out]: s -> The string to trim
+ */
 void Linkam3::rtrim(char *s) {
     int i;
     for (i = strlen(s); s[i-1] == ' ' || s[i-1] == '\t'; --i)
         ;
     s[i] = '\0';
 }
+
+
 
 asynStatus Linkam3::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
 {
@@ -193,11 +216,13 @@ asynStatus Linkam3::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
     asynStatus status = asynSuccess;
 
     if (function == P_RampRateSet) {
-            param1.vStageValueType = LinkamSDK::eStageValueTypeHeaterRate;
-    } else if (function == P_SetpointSet) {
-            param1.vStageValueType = LinkamSDK::eStageValueTypeHeaterSetpoint;
-    } else if (function == P_HoldTimeSet) {
-            param1.vStageValueType = LinkamSDK::eStageValueTypeRampHoldTime;
+        param1.vStageValueType = LinkamSDK::eStageValueTypeHeaterRate;
+    }
+    else if (function == P_SetpointSet) {
+        param1.vStageValueType = LinkamSDK::eStageValueTypeHeaterSetpoint;
+    }
+    else if (function == P_HoldTimeSet) {
+        param1.vStageValueType = LinkamSDK::eStageValueTypeRampHoldTime;
     }
 
     param2.vFloat32 = value;
@@ -219,6 +244,7 @@ asynStatus Linkam3::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
     return status;
 }
 
+
 asynStatus Linkam3::writeInt32(asynUser *pasynUser, epicsInt32 value)
 {
     LinkamSDK::Variant param1;
@@ -231,11 +257,8 @@ asynStatus Linkam3::writeInt32(asynUser *pasynUser, epicsInt32 value)
     if (function == P_StartHeating) {
         param2.vUint64 = 0; /* unused */
 
-        if (value > 0){
-            param1.vBoolean = true;
-        } else {
-            param1.vBoolean = false;
-        }
+        if (value > 0) param1.vBoolean = true;
+        else param1.vBoolean = false;
 
         linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_StartHeating,
                              handle, &result, param1, param2);
@@ -243,13 +266,12 @@ asynStatus Linkam3::writeInt32(asynUser *pasynUser, epicsInt32 value)
         if (!result.vBoolean) {
             status = asynError;
         }
-    } else if (function == P_LNPSetMode) {
+    }
+    else if (function == P_LNPSetMode) {
         param2.vUint64 = 0; /* unused */
 
-        if (value > 0)
-            LNP_AutoMode = param1.vBoolean = true;
-        else
-            LNP_AutoMode = param1.vBoolean = false;
+        if (value > 0) LNP_AutoMode = param1.vBoolean = true;
+        else LNP_AutoMode = param1.vBoolean = false;
 
         linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_LnpSetMode, handle, &result, param1, param2);
 
@@ -260,16 +282,16 @@ asynStatus Linkam3::writeInt32(asynUser *pasynUser, epicsInt32 value)
                 linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_LnpSetSpeed,
                                      handle, &result, param1, param2);
             }
-        } else {
+        }
+        else {
             status = asynError;
         }
-    } else if (function == P_LNPSetSpeed) {
+    }
+    else if (function == P_LNPSetSpeed) {
         param2.vUint64 = 0; /* unused */
 
-        if (value < 0)
-            value = 0;
-        else if (value > 100)
-            value = 100;
+        if (value < 0) value = 0;
+        else if (value > 100) value = 100;
 
         LNP_ManualSpeed = value;
 
@@ -309,14 +331,14 @@ asynStatus Linkam3::readInt32(asynUser *pasynUser, epicsInt32 *value)
     if (function == P_CtrlConfig) {
         if (linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_GetControllerConfig, handle, &result)) {
             *value =
-                  /* result.vControllerConfig.flags.supportsHeater                      << 0  |
+              /* result.vControllerConfig.flags.supportsHeater                      << 0  |
                  result.vControllerConfig.flags.supportsDualHeater                  << 1  |
                  result.vControllerConfig.flags.supportsDualHeaterIndependentLimits << 2  |
                  result.vControllerConfig.flags.supportsDualHeaterIndependentRates  << 3  |
                  result.vControllerConfig.flags.vacuumOption                        << 4  |
                  result.vControllerConfig.flags.tensileForceCardReady               << 5  |*/
                  result.vControllerConfig.flags.dscCardReady                        << 0  |
-                   /*result.vControllerConfig.flags.xMotorCardReady                     << 7  |
+               /*result.vControllerConfig.flags.xMotorCardReady                     << 7  |
                  result.vControllerConfig.flags.yMotorCardReady                     << 8  |
                  result.vControllerConfig.flags.zMotorCardReady                     << 9  |
                  result.vControllerConfig.flags.motorValveCardReady                 << 7  |
@@ -330,7 +352,8 @@ asynStatus Linkam3::readInt32(asynUser *pasynUser, epicsInt32 *value)
         } else {
             status = asynError;
         }
-    } else if (function == P_CtrlStatus) {
+    } 
+    else if (function == P_CtrlStatus) {
         if (linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_GetStatus, handle, &result)) { 
             *value = result.vControllerStatus.flags.controllerError               << 0  |
                  result.vControllerStatus.flags.heater1RampSetPoint           << 1  |
@@ -362,13 +385,15 @@ asynStatus Linkam3::readInt32(asynUser *pasynUser, epicsInt32 *value)
                  result.vControllerStatus.flags.cssLidOn                      << 10 |
                  result.vControllerStatus.flags.cssRefLimit                   << 11 |
                  result.vControllerStatus.flags.cssZeroLimit                  << 12;*/
-      if (result.vControllerStatus.flags.controllerError){
-        printf("Controller Error: %i\n", linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_GetControllerError, handle, &result));
-      }
-        } else {
+            if (result.vControllerStatus.flags.controllerError){
+                printf("Controller Error: %i\n", linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_GetControllerError, handle, &result));
+            }
+        }
+        else {
             status = asynError;
         }
-    } else if (function == P_StageConfig) {
+    }
+    else if (function == P_StageConfig) {
         if (linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_GetStageConfig, handle, &result)) {
             *value = result.vStageConfig.flags.standardStage               << 0  |
                    /*result.vStageConfig.flags.highTempStage               << 1  |
@@ -396,9 +421,10 @@ asynStatus Linkam3::readInt32(asynUser *pasynUser, epicsInt32 *value)
                  result.vStageConfig.flags.motorY                      << 23 |
                  result.vStageConfig.flags.motorZ                      << 24 |*/
                  result.vStageConfig.flags.supportsHumidity            << 4;
-        } else {
+        }
+        else {
             status = asynError;
-        } 
+        }
     } 
 
     if (status)
@@ -414,26 +440,32 @@ asynStatus Linkam3::readInt32(asynUser *pasynUser, epicsInt32 *value)
 }
 
 
-
-bool Linkam3::initUSBConnection(CommsHandle& handle, unsigned int vendorID, unsigned int productID, LinkamSDK::Variant& result) {
+/**
+ * Function for connecting to the Linkam device via USB
+ * 
+ * @params[in]: vendorID -> The Linkam vendor ID (0x16DA)
+ * @params[in]: productID -> The product ID, typically set to discover mode (0x0001)
+ * @returns: true if connected successfully, false otherwise
+ */
+bool Linkam3::initUSBConnection(unsigned int vendorID, unsigned int productID) {
 
     const char* functionName = "initUSBConnection";
     LinkamSDK::CommsInfo info;
     LinkamSDK::Variant param1;
     LinkamSDK::Variant param2;
+    LinkamSDK::Variant result;
     bool connected = false;
 
     param1.vUint32 = LOGGING_LEVEL_MINIMAL;//LOGGING_LEVEL_INVESTIGATION;
     linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_EnableLogging, 0, &result, param1, param2);
     linkamInitialiseUSBCommsInfo(&info, NULL);
 
-    if (vendorID != 0x0){
+    if (vendorID != 0x0) {
         LinkamSDK::USBCommsInfo* usb = reinterpret_cast<LinkamSDK::USBCommsInfo*>(info.info);
         usb->vendorID = (uint16_t) vendorID;
         printf("USB: Vendor[%X] Product[%d]\n", usb->vendorID, usb->productID);
     }
-    else if (productID != 0x0)
-    {
+    else if (productID != 0x0) {
         LinkamSDK::USBCommsInfo* usb = reinterpret_cast<LinkamSDK::USBCommsInfo*>(info.info);
         usb->productID = (uint16_t) productID;
         printf("USB: Vendor[%X] Product[%d]\n", usb->vendorID, usb->productID);
@@ -442,8 +474,7 @@ bool Linkam3::initUSBConnection(CommsHandle& handle, unsigned int vendorID, unsi
     param1.vPtr = &info;
     param2.vPtr = &handle;
     linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_OpenComms, 0, &result, param1, param2);
-    if (result.vConnectionStatus.flags.connected)
-    {
+    if (result.vConnectionStatus.flags.connected) {
         LOG("We got a connection to the USB device!");
         connected = true;
     }
@@ -456,19 +487,30 @@ bool Linkam3::initUSBConnection(CommsHandle& handle, unsigned int vendorID, unsi
 }
 
 
-bool Linkam3::initSerialConnection(CommsHandle& handle, const char* serialPort, 
-                                                    unsigned int baudrate, 
-                                                    unsigned int bytesize, 
-                                                    unsigned int flowcontrol, 
-                                                    unsigned int parity, 
-                                                    unsigned int stopbits, 
-                                                    LinkamSDK::Variant& result){
+/**
+ * Function for connecting to the Linkam device via Serial
+ * 
+ * @params[in] serialPort -> Name of the serial port to connect to
+ * @params[in]: baudrate -> The seed of the serial connection
+ * @params[in]: bytesize -> How big the serial byte is, must be 8 bits
+ * @params[in]: flowcontrol -> Type of flow control
+ * @params[in]: parity -> Use of the parity bit
+ * @params[in]: stopbits -> Number of bits to indicate a stop
+ * @returns: true if connected successfully, false otherwise
+ */
+bool Linkam3::initSerialConnection(const char* serialPort, 
+                                    unsigned int baudrate, 
+                                    unsigned int bytesize, 
+                                    unsigned int flowcontrol, 
+                                    unsigned int parity, 
+                                    unsigned int stopbits){
 
     const char* functionName = "initSerialConnection";
 
     LinkamSDK::CommsInfo info;
     LinkamSDK::Variant param1;
     LinkamSDK::Variant param2;
+    LinkamSDK::Variant result;
     bool connected = false;
 
     param1.vUint32 = LOGGING_LEVEL_MINIMAL;//LOGGING_LEVEL_INVESTIGATION;
@@ -483,36 +525,31 @@ bool Linkam3::initSerialConnection(CommsHandle& handle, const char* serialPort,
 
     linkamInitialiseSerialCommsInfo(&info, serialPort);
 
-    if (baudrate != 0x0)
-    {
+    if (baudrate != 0x0) {
         LinkamSDK::SerialCommsInfo* serial = reinterpret_cast<LinkamSDK::SerialCommsInfo*>(info.info);
         serial->baudrate = (uint32_t) baudrate;
         printf("SERIAL: Setting baudrate to [%d]\n", serial->baudrate);
     }
 
-    if (bytesize != 0x0)
-    {
+    if (bytesize != 0x0) {
         LinkamSDK::SerialCommsInfo* serial = reinterpret_cast<LinkamSDK::SerialCommsInfo*>(info.info);
         serial->bytesize = (LinkamSDK::ByteSize) bytesize;
         printf("SERIAL: Setting bytesize to [%d]\n", serial->bytesize);
     }
 
-    if (flowcontrol != 0x0)
-    {
+    if (flowcontrol != 0x0) {
         LinkamSDK::SerialCommsInfo* serial = reinterpret_cast<LinkamSDK::SerialCommsInfo*>(info.info);
         serial->flowcontrol = (LinkamSDK::FlowControl) flowcontrol;
         printf("SERIAL: Setting flowcontrol to [%d]\n", serial->flowcontrol);
     }
 
-    if (parity != 0x0)
-    {
+    if (parity != 0x0) {
         LinkamSDK::SerialCommsInfo* serial = reinterpret_cast<LinkamSDK::SerialCommsInfo*>(info.info);
         serial->parity = (LinkamSDK::Parity) parity;
         printf("SERIAL: Setting parity to [%d]\n", serial->parity);
     }
 
-    if (stopbits != 0x0)
-    {
+    if (stopbits != 0x0) {
         LinkamSDK::SerialCommsInfo* serial = reinterpret_cast<LinkamSDK::SerialCommsInfo*>(info.info);
         serial->stopbits = (LinkamSDK::Stopbits) stopbits;
         printf("SERIAL: Setting stopbits to [%d]\n", serial->stopbits);
@@ -522,13 +559,11 @@ bool Linkam3::initSerialConnection(CommsHandle& handle, const char* serialPort,
     param2.vPtr = &handle;
 
     linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_OpenComms, 0, &result, param1, param2);
-    if (result.vConnectionStatus.flags.connected)
-    {
+    if (result.vConnectionStatus.flags.connected) {
         LOG("We got a connection to the Serial device!");
         connected = true;
     }
-    else
-    {
+    else {
         ERR("Failed to connect to the Serial Device!");
         printErrorConnectionStatus(result);
     }
@@ -537,6 +572,9 @@ bool Linkam3::initSerialConnection(CommsHandle& handle, const char* serialPort,
 }
 
 
+/**
+ * Helper function that retrieves controller status and prints all information
+ */
 void Linkam3::printLinkam3Status() {
     LinkamSDK::Variant result;
     linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_GetStatus, handle, &result);
@@ -575,7 +613,12 @@ void Linkam3::printLinkam3Status() {
 
 
 /*
- *
+ * Linkam3 driver constructor. Extends from asynPortDriver. Initalizes PV parameters, connects to the device, and populates some inital vals.
+ * 
+ * @params[in]: portName -> Name of the asynPort assigned
+ * @params[in]: connectionType -> Either USB or Serial
+ * @params[in]: licenseFilePath -> Path to the Linkam.lsk file license for the SDK
+ * @params[in]: logFilePath -> Path to the log file the SDK should generate
  */
 Linkam3::Linkam3(const char *portName, const char* connectionType, const char* licenseFilePath, const char* logFilePath)
     : asynPortDriver(portName,
@@ -620,34 +663,40 @@ Linkam3::Linkam3(const char *portName, const char* connectionType, const char* l
     //printf("Disable logging\n");
     //linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_DisableLogging, 0, &result, param1, param2);
 
+    // Initalize the SDK, given the licenseFile and logFile
     LOG("Initialising Linkam3 SDK...\n");
     if (linkamInitialiseSDK(logFilePath, licenseFilePath, false))
         LOG("Linkam SDK initialized successfully");
     else
         ERR("Failed to initialize Linkam SDK!");
 
+    // Collect the SDK version
     char version[256];
     linkamGetVersion(version, 256);
-    //printf("Linkam SDK version: %s\n", version);
     setStringParam(P_FirmVer, version);
 
+    // Connect to the device
     bool connected = false;
 
-    if(strcmp(connectionType, "Serial") == 0){
-        connected = initSerialConnection(handle, "/dev/ttyS1", 0, 0, 0, 0, 0, result);
+    if(strcmp(connectionType, "Serial") == 0) {
+        // /dev/ttyS1 is default - needs to be an iocsh arg TODO
+        connected = initSerialConnection("/dev/ttyS1", 0, 0, 0, 0, 0);
     }
-    else if (strcmp(connectionType, "USB") == 0){
+    else if (strcmp(connectionType, "USB") == 0) {
         // Linkam vendor ID is 16da, product ID for T96 is 0002
-        connected = initUSBConnection(handle, 0x16da, 0x0002, result);
+        // Maybe this should also be an iocsh arg.
+        connected = initUSBConnection(0x16da, 0x0002);
     }
     else {
         ERR("No valid connection type selected!");
     }
 
-    if (connected){
+    // Collect some device info if connected OK.
+    if (connected) {
 
         LinkamSDK::Variant param1;
         LinkamSDK::Variant param2;
+        LinkamSDK::Variant result;
         
         char serial[1024] = { 0 };
         char name[1024] = { 0 };
@@ -668,11 +717,14 @@ Linkam3::Linkam3(const char *portName, const char* connectionType, const char* l
 
     }
 
-
     epicsAtExit(exitCallbackC, this);
 }
 
 
+/**
+ * Destructor for the Linkam object.
+ * Simply de-initalizes the SDK on IOC exit.
+ */
 Linkam3::~Linkam3(){
     static const char* functionName = "~Linkam3";
     LOG("Linkam3 Driver exiting...");
@@ -682,10 +734,19 @@ Linkam3::~Linkam3(){
 }
 
 
+/**
+ * External C function called from the IOC shell. Spawns a Linkam3 driver instance.
+ * 
+ * @params[in]: portName -> Name of the asynPort assigned
+ * @params[in]: connectionType -> Either USB or Serial
+ * @params[in]: licenseFilePath -> Path to the Linkam.lsk file license for the SDK
+ * @params[in]: logFilePath -> Path to the log file the SDK should generate
+ * @returns: asynSuccess
+ * 
+ */
 extern "C" int Linkam3Connect(const char* portName, const char* connectionType, const char* licenseFilePath, const char* logFilePath){
 
     new Linkam3(portName, connectionType, licenseFilePath, logFilePath);
-
     return asynSuccess;
 }
 
@@ -701,27 +762,23 @@ static const iocshArg Linkam3ConnectArg1 = { "Connection Type",     iocshArgStri
 static const iocshArg Linkam3ConnectArg2 = { "License File Path",   iocshArgString };
 static const iocshArg Linkam3ConnectArg3 = { "Log File Path",       iocshArgString };
 
-static const iocshArg* const Linkam3StatusArgs[] = { };
-
 
 static const iocshArg* const Linkam3ConnectArgs[] = { &Linkam3ConnectArg0, &Linkam3ConnectArg1, &Linkam3ConnectArg2, &Linkam3ConnectArg3 };
-
 
 
 static void Linkam3ConnectCallFunc(const iocshArgBuf* args){
     Linkam3Connect(args[0].sval, args[1].sval, args[2].sval, args[3].sval);
 }
 
+
 static const iocshFuncDef Linkam3ConnectFuncDef = {"Linkam3Connect", 3, Linkam3ConnectArgs};
 
-/*
- * iocshRegister
- */
 
 static void Linkam3Register(void)
 {
     iocshRegister(&Linkam3ConnectFuncDef, Linkam3ConnectCallFunc);
 }
+
 
 extern "C" {
     epicsExportRegistrar(Linkam3Register);

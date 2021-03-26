@@ -68,14 +68,13 @@ protected:
     #define LAST_LINKAM_COMMAND P_Serial
 
     // Connection functions
-    bool initUSBConnection(CommsHandle& handle, unsigned int vendorID, unsigned int productID, LinkamSDK::Variant& result);
-    bool initSerialConnection(CommsHandle& handle, const char* serialPort, 
-                                                    unsigned int baudrate, 
-                                                    unsigned int bytesize, 
-                                                    unsigned int flowcontrol, 
-                                                    unsigned int parity, 
-                                                    unsigned int stopbits, 
-                                                    LinkamSDK::Variant& result);
+    bool initUSBConnection(unsigned int vendorID, unsigned int productID);
+    bool initSerialConnection(const char* serialPort, 
+                                unsigned int baudrate, 
+                                unsigned int bytesize, 
+                                unsigned int flowcontrol, 
+                                unsigned int parity, 
+                                unsigned int stopbits);
 
     // Status printing functions
     void printErrorConnectionStatus(LinkamSDK::Variant connectionResult);
@@ -86,8 +85,9 @@ private:
     void rtrim(char *);
     bool LNP_AutoMode;
     int LNP_ManualSpeed;
+
+    // Handle on the device
     CommsHandle handle = 0;
-    LinkamSDK::Variant result;
 };
 
 #define NUM_LINKAM_PARAMS (&LAST_LINKAM_COMMAND - &FIRST_LINKAM_COMMAND + 1)
