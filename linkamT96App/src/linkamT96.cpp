@@ -20,10 +20,10 @@ static const char *driverName = "Linkam3";
     "%s::%s: " fmt "\n", driverName, functionName, __VA_ARGS__);
 
 // Flow message formatters
-#define LOG(msg) asynPrint(pasynUserSelf, ASYN_TRACE_FLOW, "%s::%s: %s\n", \
+#define LOG(msg) asynPrint(pasynUserSelf, ASYN_TRACEIO_DEVICE, "%s::%s: %s\n", \
     driverName, functionName, msg)
 
-#define LOG_ARGS(fmt,...) asynPrint(pasynUserSelf, ASYN_TRACE_FLOW, \
+#define LOG_ARGS(fmt,...) asynPrint(pasynUserSelf, ASYN_TRACEIO_DEVICE, \
     "%s::%s: " fmt "\n", driverName, functionName, __VA_ARGS__);
 
 
@@ -644,9 +644,29 @@ Linkam3::Linkam3(const char *portName, const char* connectionType, const char* l
         ERR("No valid connection type selected!");
     }
 
-    //if (connected){
+    if (connected){
 
-    //}
+        LinkamSDK::Variant param1;
+        LinkamSDK::Variant param2;
+        
+        char serial[1024] = { 0 };
+        char name[1024] = { 0 };
+        
+        // Get serial number info
+        result.vUint64 = 0;
+        param1.vPtr = serial;
+        param2.vUint32 = 1024;
+        linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_GetControllerSerial, handle, &result, param1, param2);
+        setStringParam(P_Serial, serial);
+
+        // Get model number info
+        result.vUint64 = 0;
+        param1.vPtr = name;
+        param2.vUint32 = 1024;
+        linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_GetControllerName, handle, &result, param1, param2);
+        setStringParam(P_Name, name);
+
+    }
 
 
     epicsAtExit(exitCallbackC, this);
