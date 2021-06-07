@@ -617,10 +617,14 @@ void Linkam3::printLinkam3Status() {
  * 
  * @params[in]: portName -> Name of the asynPort assigned
  * @params[in]: connectionType -> Either USB or Serial
+ * @params[in]: productID -> USB product ID
+ * @params[in]: vendorID -> USB venodr ID
+ * @params[in]: serialPort -> Serial port to connect to ex. /dev/ttyS1
  * @params[in]: licenseFilePath -> Path to the Linkam.lsk file license for the SDK
  * @params[in]: logFilePath -> Path to the log file the SDK should generate
  */
-Linkam3::Linkam3(const char *portName, const char* connectionType, const char* licenseFilePath, const char* logFilePath)
+Linkam3::Linkam3(const char *portName, const char* connectionType, unsigned int productID, unsigned int vendorID, const char* serialPort, 
+                 const char* licenseFilePath, const char* logFilePath)
     : asynPortDriver(portName,
              1, /* maxAddr */
              NUM_LINKAM_PARAMS,
@@ -680,12 +684,12 @@ Linkam3::Linkam3(const char *portName, const char* connectionType, const char* l
 
     if(strcmp(connectionType, "Serial") == 0) {
         // /dev/ttyS1 is default - needs to be an iocsh arg TODO
-        connected = initSerialConnection("/dev/ttyS1", 0, 0, 0, 0, 0);
+        connected = initSerialConnection(serialPort, 0, 0, 0, 0, 0);
     }
     else if (strcmp(connectionType, "USB") == 0) {
         // Linkam vendor ID is 16da, product ID for T96 is 0002
         // Maybe this should also be an iocsh arg.
-        connected = initUSBConnection(0x16da, 0x0002);
+        connected = initUSBConnection(vendorID, productID);
     }
     else {
         ERR("No valid connection type selected!");
@@ -757,26 +761,48 @@ extern "C" int Linkam3Connect(const char* portName, const char* connectionType, 
 //-------------------------------------------------------------
 
 
-static const iocshArg Linkam3ConnectArg0 = { "Port name",           iocshArgString };
-static const iocshArg Linkam3ConnectArg1 = { "Connection Type",     iocshArgString };
-static const iocshArg Linkam3ConnectArg2 = { "License File Path",   iocshArgString };
-static const iocshArg Linkam3ConnectArg3 = { "Log File Path",       iocshArgString };
+static const iocshArg Linkam3ConnectUSBArg0 = { "Port name",           iocshArgString };
+static const iocshArg Linkam3ConnectUSBArg1 = { "Vendor ID",           iocshArgInt    };
+static const iocshArg Linkam3ConnectUSBArg2 = { "Product ID",          iocshArgInt    };
+static const iocshArg Linkam3ConnectUSBArg3 = { "License File Path",   iocshArgString };
+static const iocshArg Linkam3ConnectUSBArg4 = { "Log File Path",       iocshArgString };
 
 
-static const iocshArg* const Linkam3ConnectArgs[] = { &Linkam3ConnectArg0, &Linkam3ConnectArg1, &Linkam3ConnectArg2, &Linkam3ConnectArg3 };
+static const iocshArg* const Linkam3ConnectUSBArgs[] = { &Linkam3ConnectUSBArg0, 
+                                                         &Linkam3ConnectUSBArg1, 
+                                                         &Linkam3ConnectUSBArg2, 
+                                                         &Linkam3ConnectUSBArg3, 
+                                                         &Linkam3ConnectUSBArg4  };
 
 
-static void Linkam3ConnectCallFunc(const iocshArgBuf* args){
-    Linkam3Connect(args[0].sval, args[1].sval, args[2].sval, args[3].sval);
+static const iocshArg Linkam3ConnectSerialArg0 = { "Port name",           iocshArgString };
+static const iocshArg Linkam3ConnectSerialArg1 = { "Serial Port",         iocshArgString };
+static const iocshArg Linkam3ConnectSerialArg2 = { "License File Path",   iocshArgString };
+static const iocshArg Linkam3ConnectSerialArg3 = { "Log File Path",       iocshArgString };
+
+
+static const iocshArg* const Linkam3ConnectSerialArgs[] = { &Linkam3ConnectSerialArg0, 
+                                                            &Linkam3ConnectSerialArg1, 
+                                                            &Linkam3ConnectSerialArg2, 
+                                                            &Linkam3ConnectSerialArg3 };
+
+
+static void Linkam3ConnectUSBCallFunc(const iocshArgBuf* args){
+    Linkam3ConnectUSB(args[0].sval, args[1].ival, args[2].ival, args[3].sval, args[3].sval, args[4].sval);
 }
 
+static void Linkam3ConnectSerialCallFunc(const iocshArgBuf* args){
+    Linkam3ConnectSerial(args[0].sval, args[1].sval, args[2].sval, args[3].sval, args[3].sval);
+}
 
-static const iocshFuncDef Linkam3ConnectFuncDef = {"Linkam3Connect", 3, Linkam3ConnectArgs};
+static const iocshFuncDef Linkam3ConnectUSBFuncDef = {"Linkam3ConnectUSB", 4, Linkam3ConnectUSBArgs};
+static const iocshFuncDef Linkam3ConnectSerialFuncDef = {"Linkam3ConnectSerial", 3, Linkam3ConnectSerialArgs};
 
 
 static void Linkam3Register(void)
 {
-    iocshRegister(&Linkam3ConnectFuncDef, Linkam3ConnectCallFunc);
+    iocshRegister(&Linkam3ConnectUSBFuncDef, Linkam3ConnectUSBCallFunc);
+    iocshRegister(&Linkam3ConnectSerialFuncDef, Linkam3ConnectSerialCallFunc);
 }
 
 
