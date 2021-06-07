@@ -623,7 +623,7 @@ void Linkam3::printLinkam3Status() {
  * @params[in]: licenseFilePath -> Path to the Linkam.lsk file license for the SDK
  * @params[in]: logFilePath -> Path to the log file the SDK should generate
  */
-Linkam3::Linkam3(const char *portName, const char* connectionType, unsigned int productID, unsigned int vendorID, const char* serialPort, 
+Linkam3::Linkam3(const char *portName, const char* connectionType, unsigned int vendorID, unsigned int productID, const char* serialPort, 
                  const char* licenseFilePath, const char* logFilePath)
     : asynPortDriver(portName,
              1, /* maxAddr */
@@ -742,19 +742,35 @@ Linkam3::~Linkam3(){
  * External C function called from the IOC shell. Spawns a Linkam3 driver instance.
  * 
  * @params[in]: portName -> Name of the asynPort assigned
- * @params[in]: connectionType -> Either USB or Serial
+ * @params[in]: vendorID -> Vendor ID for the linkam stage. Typically 0x16a
+ * @params[in]: productID -> Product ID for the stage. Typically 0x0002
  * @params[in]: licenseFilePath -> Path to the Linkam.lsk file license for the SDK
  * @params[in]: logFilePath -> Path to the log file the SDK should generate
  * @returns: asynSuccess
  * 
  */
-extern "C" int Linkam3Connect(const char* portName, const char* connectionType, const char* licenseFilePath, const char* logFilePath){
+extern "C" int Linkam3ConnectUSB(const char* portName, unsigned int vendorID, unsigned int productID, const char* licenseFilePath, const char* logFilePath){
 
-    new Linkam3(portName, connectionType, licenseFilePath, logFilePath);
+    new Linkam3(portName, "USB", vendorID, productID, "",  licenseFilePath, logFilePath);
     return asynSuccess;
 }
 
 
+/**
+ * External C function called from the IOC shell. Spawns a Linkam3 driver instance, and connects via serial
+ * 
+ * @params[in]: portName -> Name of the asynPort assigned
+ * @params[in]: serialPort -> Hardware serial port the stage is connected to (ex. /dev/ttyS1)
+ * @params[in]: licenseFilePath -> Path to the Linkam.lsk file license for the SDK
+ * @params[in]: logFilePath -> Path to the log file the SDK should generate
+ * @returns: asynSuccess
+ * 
+ */
+extern "C" int Linkam3ConnectSerial(const char* portName, const char* serialPort, const char* licenseFilePath, const char* logFilePath){
+
+    new Linkam3(portName, "Serial", 0, 0, serialPort,  licenseFilePath, logFilePath);
+    return asynSuccess;
+}
 
 //-------------------------------------------------------------
 // Linkam3 ioc shell functions registration
@@ -788,11 +804,11 @@ static const iocshArg* const Linkam3ConnectSerialArgs[] = { &Linkam3ConnectSeria
 
 
 static void Linkam3ConnectUSBCallFunc(const iocshArgBuf* args){
-    Linkam3ConnectUSB(args[0].sval, args[1].ival, args[2].ival, args[3].sval, args[3].sval, args[4].sval);
+    Linkam3ConnectUSB(args[0].sval, args[1].ival, args[2].ival, args[3].sval, args[4].sval);
 }
 
 static void Linkam3ConnectSerialCallFunc(const iocshArgBuf* args){
-    Linkam3ConnectSerial(args[0].sval, args[1].sval, args[2].sval, args[3].sval, args[3].sval);
+    Linkam3ConnectSerial(args[0].sval, args[1].sval, args[2].sval, args[3].sval);
 }
 
 static const iocshFuncDef Linkam3ConnectUSBFuncDef = {"Linkam3ConnectUSB", 4, Linkam3ConnectUSBArgs};
