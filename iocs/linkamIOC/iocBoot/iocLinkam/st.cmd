@@ -13,18 +13,26 @@ epicsEnvSet("PREFIX", "TestLinkam1")
 # Asyn Port
 epicsEnvSet("PORT", "LINK1")
 
-# Either Serial or USB connection is supported
-#epicsEnvSet("CONNECTION_TYPE", "Serial")
-epicsEnvSet("CONNECTION_TYPE", "USB")
-
 # Path to the Linkam.lsk software license file
 epicsEnvSet("LINKAM3_LICENSE_PATH", "/epics/src/support/linkam3/SDK/bin/Release/x64/Linkam.lsk")
+
 # Path for log messages
 epicsEnvSet("LINKAM3_LOG_PATH", "tmp/linkam.log")
 
+# USB Connection parameters.
+epicsEnvSet("VENDOR_ID", "")
+epicsEnvSet("PRODUCT_ID", "")
 
-# Linkam 3.0 connect function
-Linkam3Connect("$(PORT)", "$(CONNECTION_TYPE)", "$(LINKAM3_LICENSE_PATH)", "$(LINKAM3_LOG_PATH)")
+# Serial Connection Parameter ex. /dev/ttyS1
+epicsEnvSet("SERIAL_PORT", "/dev/ttyS1")
+
+# Use one of the below functions to connect to the Linkam Stage
+
+# Linkam 3.0 USB connection function
+Linkam3ConnectUSB("$(PORT)", "$(VENDOR_ID)", "$(PRODUCT_ID)", "$(LINKAM3_LICENSE_PATH)", "$(LINKAM3_LOG_PATH)")
+
+# Linkam 3.0 Serial connection function
+Linkam3ConnectSerial("$(PORT)", "$(SERIAL_PORT)", "$(LINKAM3_LICENSE_PATH)", "$(LINKAM3_LOG_PATH)")
 epicsThreadSleep(2)
 
 # Set asyn log level
