@@ -742,7 +742,7 @@ Linkam3::~Linkam3(){
  * External C function called from the IOC shell. Spawns a Linkam3 driver instance.
  * 
  * @params[in]: portName -> Name of the asynPort assigned
- * @params[in]: vendorID -> Vendor ID for the linkam stage. Typically 0x16a
+ * @params[in]: vendorID -> Vendor ID for the linkam stage. Typically 0x16da
  * @params[in]: productID -> Product ID for the stage. Typically 0x0002
  * @params[in]: licenseFilePath -> Path to the Linkam.lsk file license for the SDK
  * @params[in]: logFilePath -> Path to the log file the SDK should generate
