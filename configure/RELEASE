@@ -21,12 +21,12 @@
 
 TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
-SUPPORT=      /epics/src/support
+SUPPORT=C:/EPICS/utils/windows-epics-config/BUILD/support
 
 ASYN=$(SUPPORT)/asyn
 
 # EPICS_BASE usually appears last so other apps can override stuff:
-EPICS_BASE=/epics/src/base
+EPICS_BASE=C:/EPICS/utils/windows-epics-config/BUILD/base
 
 # Set RULES here if you want to take build rules from somewhere
 # other than EPICS_BASE:

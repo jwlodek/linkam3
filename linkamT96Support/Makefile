@@ -21,8 +21,16 @@ INC += USB.h
 ifeq (linux-x86_64, $(findstring linux-x86_64, $(T_A)))
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libLinkamSDK.so
 
-else ifeq(linux-x86, $(findstring linux-x86, $(T_A)))
+else ifeq (linux-x86, $(findstring linux-x86, $(T_A)))
 LIB_INSTALLS_Linux += ../os/linux-x86/libLinkamSDK.so
+
+else ifeq (windows-x64, $(findstring windows-x64, $(T_A)))
+LIB_INSTALLS_WIN32 += ../os/windows-x64/LinkamSDK.lib
+BIN_INSTALLS_WIN32 += ../os/windows-x64/LinkamSDK.dll
+
+else ifeq (windows-x64-static, $(findstring windows-x64-static, $(T_A)))
+LIB_INSTALLS_WIN32 += ../os/windows-x64/LinkamSDK.lib
+BIN_INSTALLS_WIN32 += ../os/windows-x64/LinkamSDK.dll
 
 endif
 
