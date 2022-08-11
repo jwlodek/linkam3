@@ -8,13 +8,13 @@ dbLoadDatabase("../../dbd/linkamT96App.dbd")
 linkamT96App_registerRecordDeviceDriver(pdbbase)
 
 # IOC PV prefix
-epicsEnvSet("PREFIX", "TestLinkam1")
+epicsEnvSet("PREFIX", "DEV-LINK1")
 
 # Asyn Port
 epicsEnvSet("PORT", "LINK1")
 
 # Path to the Linkam.lsk software license file
-epicsEnvSet("LINKAM3_LICENSE_PATH", "/epics/src/support/linkam3/SDK/bin/Release/x64/Linkam.lsk")
+epicsEnvSet("LINKAM3_LICENSE_PATH", "/opt/linkam3/Linkam.lsk")
 
 # Path for log messages
 epicsEnvSet("LINKAM3_LOG_PATH", "tmp/linkam.log")
@@ -24,7 +24,7 @@ epicsEnvSet("VENDOR_ID", "0x16da")
 epicsEnvSet("PRODUCT_ID", "0x0002")
 
 # Serial Connection Parameter for physical port device is connected to. ex. /dev/ttyS1
-epicsEnvSet("SERIAL_PORT", "/dev/ttyS1")
+#epicsEnvSet("SERIAL_PORT", "/dev/ttyS1")
 
 # Use one of the below functions to connect to the Linkam Stage
 
@@ -43,5 +43,6 @@ asynSetTraceIOMask($(PORT), 0, 0x2)
 
 # Load linkam records
 dbLoadRecords("$(LINKAM3)/db/Linkam.template", "P=$(PREFIX), PORT=$(PORT), ADDR=0, TIMEOUT=1")
+dbLoadRecords("$(LINKAM3)/db/LinkamTensileStage.template", "P=$(PREFIX), PORT=$(PORT), ADDR=0, TIMEOUT=1")
 
 iocInit()
