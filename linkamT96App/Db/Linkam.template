@@ -102,7 +102,7 @@ record(waveform, "$(P):HARD:VER")
 
 record(waveform, "$(P):CTRLLR:ERR")
 {
-	field(SCAN, "1 second")
+	#field(SCAN, "1 second")
 	field(DTYP, "asynOctetRead")
 	field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))LINKAM_CTRLLR_ERROR")
 	field(FTVL, "CHAR")
