@@ -129,6 +129,8 @@ asynStatus Linkam3::readFloat64(asynUser *pasynUser, epicsFloat64 *value)
         param1.vStageValueType = LinkamSDK::eStageValueTypeMotorTstDefaultSpeed;
     } else if (function == P_TstRawMotorPos) {
         param1.vStageValueType = LinkamSDK::eStageValueTypeTstRawMotorPos;
+    } else if (function == P_TstMtrDistSP) {
+        param1.vStageValueType = LinkamSDK::eStageValueTypeTstMotorDistanceSetpoint;
     }
 
     if (linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_GetValue, handle, &result, param1, param2))
@@ -266,6 +268,8 @@ asynStatus Linkam3::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
         param1.vStageValueType = LinkamSDK::eStageValueTypeMotorTstDefaultSpeed;
     }else if (function == P_ForceSetpointSet) {
         param1.vStageValueType = LinkamSDK::eStageValueTypeTstForceSetpoint;
+    } else if (function == P_TstMtrDistSPSet) {
+        param1.vStageValueType = LinkamSDK::eStageValueTypeTstMotorDistanceSetpoint;
     }
 
 
@@ -382,6 +386,15 @@ asynStatus Linkam3::writeInt32(asynUser *pasynUser, epicsInt32 value)
         }
         if(!linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_TstSetMode, handle, &result, param1, param2)) status = asynError;
     }
+    else if (function == P_TstStartMotor) {
+        LOG("Starting tensile motor movement");
+        param1.vBoolean = true;
+        if(value == 0)
+            param1.vBoolean = false;
+        // StartMotors function takes 5 as TST motor
+        param2.vInt32 = 5;
+        if(!linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_StartMotors, handle, &result, param1, param2)) status = asynError;
+    }
     else if (function == P_TstCalibDistance) {
         if(!linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_TstCalibrateDistance, handle, &result, param1, param2)) status = asynError;
     }
@@ -393,6 +406,21 @@ asynStatus Linkam3::writeInt32(asynUser *pasynUser, epicsInt32 value)
     }
     else if (function == P_TstZeroForce) {
         if(!linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_TstZeroForce, handle, &result, param1, param2)) status = asynError;
+    }
+
+    else if (function == P_SampleSizeSet){
+        printf("Here.\n");
+        param1.vStageValueType = LinkamSDK::eStageValueTypeTstSampleSize;
+        double sampleWidth, sampleThickness;
+        getDoubleParam(P_SampleWidthSet, &sampleWidth);
+        getDoubleParam(P_SampleThicknessSet, &sampleThickness);
+        LinkamSDK::TSTSampleSize sampleSize;
+        sampleSize.thickness = sampleThickness;
+        sampleSize.width = sampleWidth;
+        param1.vTSTSampleSize = sampleSize;
+        linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_SetValue, handle, &result, param1, param2);
+        //printf("Set Sample size is %lf, %lf\n", result.vTSTSampleSize.width, result.vTSTSampleSize.thickness);
+        callParamCallbacks();
     }
 
     else {
@@ -543,6 +571,7 @@ asynStatus Linkam3::readInt32(asynUser *pasynUser, epicsInt32 *value)
     else if (function == P_SampleSize){
         param1.vStageValueType = LinkamSDK::eStageValueTypeTstSampleSize;
         linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_GetValue, handle, &result, param1, param2);
+        printf("Set Sample size is %lf, %lf\n", result.vTSTSampleSize.width, result.vTSTSampleSize.thickness);
         setDoubleParam(P_SampleWidth, result.vTSTSampleSize.width);
         setDoubleParam(P_SampleThickness, result.vTSTSampleSize.thickness);
         callParamCallbacks();
@@ -818,6 +847,8 @@ Linkam3::Linkam3(const char *portName, const char* connectionType, unsigned int 
     createParam(P_MaxForceString, asynParamFloat64, &P_MaxForce);
     createParam(P_TstMtrVelSetString, asynParamFloat64, &P_TstMtrVelSet);
     createParam(P_TstMtrVelString, asynParamFloat64, &P_TstMtrVel);
+    createParam(P_TstMtrDistSPSetString, asynParamFloat64, &P_TstMtrDistSPSet);
+    createParam(P_TstMtrDistSPString, asynParamFloat64, &P_TstMtrDistSP);
     createParam(P_ForceSetpointSetString, asynParamFloat64, &P_ForceSetpointSet);
     createParam(P_ForceSetpointString, asynParamFloat64, &P_ForceSetpoint);
     createParam(P_ForceGaugeString, asynParamFloat64, &P_ForceGauge);
@@ -860,6 +891,8 @@ Linkam3::Linkam3(const char *portName, const char* connectionType, unsigned int 
     createParam(P_TstCalibDistanceString, asynParamInt32, &P_TstCalibDistance);
     createParam(P_TstZeroDistanceString, asynParamInt32, &P_TstZeroDistance);
     createParam(P_TstZeroForceString, asynParamInt32, &P_TstZeroForce);
+    createParam(P_TstStartMotorString, asynParamInt32, &P_TstStartMotor);
+
     //printf("Disable logging\n");
     //linkamProcessMessage(LinkamSDK::eLinkamFunctionMsgCode_DisableLogging, 0, &result, param1, param2);
 

@@ -31,6 +31,8 @@
 #define P_MaxForceString        "LINKAM_MAX_FORCE"
 #define P_TstMtrVelSetString    "LINKAM_TST_MTR_VEL_SET"
 #define P_TstMtrVelString       "LINKAM_TST_MTR_VEL"
+#define P_TstMtrDistSPSetString    "LINKAM_TST_MTR_DIST_SP_SET"
+#define P_TstMtrDistSPString       "LINKAM_TST_MTR_DIST_SP"
 #define P_ForceSetpointSetString "LINKAM_FORCE_SETPOINT_SET"
 #define P_ForceSetpointString   "LINKAM_FORCE_SETPOINT"
 #define P_ForceGaugeString      "LINKAM_FORCE_GAUGE"
@@ -73,6 +75,7 @@
 #define P_TstCalibDistanceString "LINKAM_TST_CALIB_DIST"
 #define P_TstZeroDistanceString "LINKAM_TST_ZERO_DISTANCE"
 #define P_TstZeroForceString "LINKAM_TST_ZERO_FORCE"
+#define P_TstStartMotorString "LINKAM_TST_START_MOTOR"
 
 class Linkam3 : public asynPortDriver {
 
@@ -124,6 +127,8 @@ protected:
     int P_MaxForce;
     int P_TstMtrVelSet;
     int P_TstMtrVel;
+    int P_TstMtrDistSPSet;
+    int P_TstMtrDistSP;
     int P_ForceSetpointSet;
     int P_ForceSetpoint;
     int P_ForceGauge;
@@ -166,7 +171,8 @@ protected:
     int P_TstCalibDistance;
     int P_TstZeroDistance;
     int P_TstZeroForce;
-    #define LAST_LINKAM_COMMAND P_TstZeroForce
+    int P_TstStartMotor;
+    #define LAST_LINKAM_COMMAND P_TstStartMotor
 
     // Connection functions
     bool initUSBConnection(unsigned int vendorID, unsigned int productID);
